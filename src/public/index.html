@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager — Painel Ágil & Kanban</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Barra Lateral de Navegação -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">✓</div>
+        <div>
+          <h1>Task Manager</h1>
+          <span class="subtitle">Lean &amp; Agile API</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-view="view-list">
+          <span class="nav-icon">📋</span>
+          <span>Lista de Tarefas</span>
+        </button>
+        <button class="nav-btn" data-view="view-kanban">
+          <span class="nav-icon">🗂️</span>
+          <span>Quadro Kanban</span>
+        </button>
+        <button class="nav-btn" data-view="view-create">
+          <span class="nav-icon">➕</span>
+          <span>Criar Nova Tarefa</span>
+        </button>
+        <button class="nav-btn" data-view="view-api">
+          <span class="nav-icon">⚡</span>
+          <span>Status &amp; Endpoints API</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="server-badge" id="server-status-badge">
+          <span class="dot online"></span>
+          <span id="server-status-text">API Online</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+      <!-- Cabeçalho Superior -->
+      <header class="top-header">
+        <div>
+          <h2 id="page-title">Lista de Tarefas</h2>
+          <p id="page-subtitle">Visualize, filtre, atualize e exclua suas tarefas em tempo real</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" id="btn-refresh" title="Atualizar dados">🔄 Atualizar</button>
+          <button class="btn btn-primary" id="btn-quick-new">➕ Nova Tarefa</button>
+        </div>
+      </header>
+
+      <!-- Cards de Resumo (Métricas) -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total de Tarefas</span>
+          <strong class="stat-value" id="stat-total">0</strong>
+        </div>
+        <div class="stat-card stat-pending">
+          <span class="stat-label">Em Aberto / Progresso</span>
+          <strong class="stat-value" id="stat-pending">0</strong>
+        </div>
+        <div class="stat-card stat-high">
+          <span class="stat-label">Prioridade Alta</span>
+          <strong class="stat-value" id="stat-high">0</strong>
+        </div>
+        <div class="stat-card stat-done">
+          <span class="stat-label">Concluídas</span>
+          <strong class="stat-value" id="stat-done">0</strong>
+        </div>
+      </section>
+
+      <!-- ABA 1: LISTA DE TAREFAS -->
+      <section id="view-list" class="view-section active">
+        <div class="filters-bar">
+          <div class="search-wrapper">
+            <input type="text" id="filter-search" placeholder="🔍 Buscar por título ou descrição..." />
+          </div>
+          <div class="filter-group">
+            <select id="filter-completed">
+              <option value="">Status: Todas</option>
+              <option value="false">Pendentes</option>
+              <option value="true">Concluídas</option>
+            </select>
+            <select id="filter-priority">
+              <option value="">Prioridade: Todas</option>
+              <option value="alta">🔴 Alta</option>
+              <option value="media">🟡 Média</option>
+              <option value="baixa">🟢 Baixa</option>
+            </select>
+            <select id="filter-kanban">
+              <option value="">Coluna Kanban: Todas</option>
+              <option value="Backlog">Backlog</option>
+              <option value="Em progresso">Em progresso</option>
+              <option value="Em revisão">Em revisão</option>
+              <option value="Concluído">Concluído</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="tasks-list-container" class="tasks-list"></div>
+      </section>
+
+      <!-- ABA 2: QUADRO KANBAN -->
+      <section id="view-kanban" class="view-section">
+        <div class="kanban-board">
+          <div class="kanban-column" data-status="Backlog">
+            <div class="kanban-col-header col-backlog">
+              <span>📋 Backlog</span>
+              <span class="col-count" id="count-backlog">0</span>
+            </div>
+            <div class="kanban-col-body" id="kanban-backlog"></div>
+          </div>
+
+          <div class="kanban-column" data-status="Em progresso">
+            <div class="kanban-col-header col-progress">
+              <span>🚧 Em progresso</span>
+              <span class="col-count" id="count-progress">0</span>
+            </div>
+            <div class="kanban-col-body" id="kanban-progress"></div>
+          </div>
+
+          <div class="kanban-column" data-status="Em revisão">
+            <div class="kanban-col-header col-review">
+              <span>🔍 Em revisão</span>
+              <span class="col-count" id="count-review">0</span>
+            </div>
+            <div class="kanban-col-body" id="kanban-review"></div>
+          </div>
+
+          <div class="kanban-column" data-status="Concluído">
+            <div class="kanban-col-header col-done">
+              <span>✅ Concluído</span>
+              <span class="col-count" id="count-done">0</span>
+            </div>
+            <div class="kanban-col-body" id="kanban-done"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABA 3: CRIAR NOVA TAREFA -->
+      <section id="view-create" class="view-section">
+        <div class="card-panel">
+          <h3>Cadastrar Nova Tarefa</h3>
+          <p class="panel-desc">Preencha os campos abaixo para adicionar uma nova tarefa à API (<code>POST /tasks</code>).</p>
+          <form id="form-create-task" class="task-form">
+            <div class="form-group">
+              <label for="create-title">Título da Tarefa *</label>
+              <input type="text" id="create-title" required placeholder="Ex.: Implementar autenticação JWT" />
+            </div>
+
+            <div class="form-group">
+              <label for="create-description">Descrição Detalhada</label>
+              <textarea id="create-description" rows="4" placeholder="Descreva os critérios de aceite ou observações da tarefa..."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="create-priority">Prioridade</label>
+                <select id="create-priority">
+                  <option value="alta">🔴 Alta</option>
+                  <option value="media" selected>🟡 Média</option>
+                  <option value="baixa">🟢 Baixa</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="create-status">Coluna Inicial no Kanban</label>
+                <select id="create-status">
+                  <option value="Backlog" selected>📋 Backlog</option>
+                  <option value="Em progresso">🚧 Em progresso</option>
+                  <option value="Em revisão">🔍 Em revisão</option>
+                  <option value="Concluído">✅ Concluído</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="reset" class="btn btn-secondary">Limpar</button>
+              <button type="submit" class="btn btn-primary">💾 Salvar Tarefa</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ABA 4: STATUS & ENDPOINTS API -->
+      <section id="view-api" class="view-section">
+        <div class="api-grid">
+          <div class="card-panel">
+            <h3>Endpoints REST Disponíveis</h3>
+            <ul class="endpoints-list">
+              <li><span class="method get">GET</span> <code>/health</code> — Status de saúde e tempo ativo do servidor</li>
+              <li><span class="method get">GET</span> <code>/tasks</code> — Lista todas as tarefas (suporta <code>?completed=</code>, <code>?priority=</code>, <code>?status=</code>, <code>?search=</code>)</li>
+              <li><span class="method get">GET</span> <code>/tasks/:id</code> — Visualiza os detalhes de uma tarefa pelo ID</li>
+              <li><span class="method post">POST</span> <code>/tasks</code> — Cria uma nova tarefa</li>
+              <li><span class="method put">PUT</span> <code>/tasks/:id</code> — Atualiza título, descrição, prioridade ou status</li>
+              <li><span class="method patch">PATCH</span> <code>/tasks/:id/toggle</code> — Alterna rapidamente entre Concluída e Pendente</li>
+              <li><span class="method delete">DELETE</span> <code>/tasks/:id</code> — Remove uma tarefa permanentemente</li>
+            </ul>
+            <div class="api-test-buttons">
+              <button class="btn btn-secondary" id="btn-test-health">Testar GET /health</button>
+              <button class="btn btn-secondary" id="btn-test-tasks">Testar GET /tasks (JSON)</button>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <h3>Resposta JSON em Tempo Real</h3>
+            <pre id="api-json-output" class="json-viewer">Clique em um dos botões ao lado para inspecionar o retorno bruto da API...</pre>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: VISUALIZAR / EDITAR TAREFA -->
+  <div class="modal-overlay hidden" id="task-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title">Editar Tarefa</h3>
+        <button class="modal-close" id="btn-close-modal">&times;</button>
+      </div>
+      <form id="form-edit-task" class="task-form">
+        <input type="hidden" id="edit-id" />
+        <div class="form-group">
+          <label for="edit-title">Título da Tarefa *</label>
+          <input type="text" id="edit-title" required />
+        </div>
+        <div class="form-group">
+          <label for="edit-description">Descrição</label>
+          <textarea id="edit-description" rows="4"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-priority">Prioridade</label>
+            <select id="edit-priority">
+              <option value="alta">🔴 Alta</option>
+              <option value="media">🟡 Média</option>
+              <option value="baixa">🟢 Baixa</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-status">Coluna Kanban</label>
+            <select id="edit-status">
+              <option value="Backlog">📋 Backlog</option>
+              <option value="Em progresso">🚧 Em progresso</option>
+              <option value="Em revisão">🔍 Em revisão</option>
+              <option value="Concluído">✅ Concluído</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-meta" id="edit-meta"></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notificação Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/script.js"></script>
+</body>
+</html>
