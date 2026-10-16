@@ -31,7 +31,7 @@ function seedInitialTasks() {
   ];
 }
 
-// 1. Criar nova tarefa (POST /tasks)
+// 1. Criar nova tarefa (POST /tasks).
 app.post('/tasks', (req, res) => {
   const { title, description = '' } = req.body;
 
