@@ -6,7 +6,7 @@ API RESTful simples, rápida e escalável para gerenciamento de tarefas (To-Do /
 
 ## 1. Propósito do Projeto
 
-O objetivo do **Task Manager API** é fornecer um backend enxuto e confiável para que usuários e aplicações clientes possam organizar seu fluxo de trabalho diário por meio do cadastro, consulta, atualização de status e remoção de tarefas.
+O objetivo do **Task Manager API** é fornecer um backend enxuto e confiável para que usuários e aplicações clientes possam organizar seu fluxo de trabalho diário por meio do cadastro, consulta, filtragem, atualização de status e remoção de tarefas.
 
 ---
 
@@ -14,7 +14,7 @@ O objetivo do **Task Manager API** é fornecer um backend enxuto e confiável pa
 
 - **Runtime:** [Node.js](https://nodejs.org/)
 - **Framework Web:** [Express.js](https://expressjs.com/) (construção das rotas e middlewares REST)
-- **Testes Automatizados:** [Jest](https://jestjs.io/) e [Supertest](https://github.com/ladjs/supertest) (testes unitários e de integração dos endpoints)
+- **Testes Automatizados:** Node.js Test Runner (`node:test` + `node:assert`) para testes de integração rápidos e sem dependências pesadas
 - **Controle de Versão e Gestão Ágil:** Git, GitHub Issues e GitHub Projects (Kanban)
 - **Integração Contínua (CI):** GitHub Actions
 
@@ -42,53 +42,64 @@ task-manager-api/
 
 ### 4.1. Definição do MVP (Minimum Viable Product)
 
-Seguindo a filosofia **Lean**, o MVP foi desenhado para entregar o **máximo de valor ao usuário no menor tempo possível**, validando a funcionalidade central de gestão de tarefas por meio das quatro operações essenciais (**CRUD**):
+Seguindo a filosofia **Lean**, o MVP foi desenhado para entregar o **máximo de valor ao usuário no menor tempo possível**, validando a funcionalidade central de gestão de tarefas por meio das operações essenciais (**CRUD**):
 
-1. **Criar tarefa (`POST /tasks`):** Permite registrar uma nova tarefa com título e descrição.
-2. **Listar/Visualizar tarefas (`GET /tasks` e `GET /tasks/:id`):** Permite consultar todas as tarefas cadastradas ou uma tarefa específica.
-3. **Atualizar tarefa (`PUT /tasks/:id`):** Permite editar o título, descrição ou marcar a tarefa como concluída (`completed: true/false`).
+1. **Criar tarefa (`POST /tasks`):** Permite registrar uma nova tarefa com título, descrição e prioridade.
+2. **Listar/Visualizar tarefas (`GET /tasks` e `GET /tasks/:id`):** Permite consultar todas as tarefas cadastradas, filtrar por status ou buscar uma tarefa específica.
+3. **Atualizar tarefa (`PUT /tasks/:id` e `PATCH /tasks/:id/toggle`):** Permite editar o título, descrição, prioridade ou marcar/desmarcar a tarefa como concluída.
 4. **Deletar tarefa (`DELETE /tasks/:id`):** Permite remover tarefas que não são mais necessárias.
 
 ### 4.2. Eliminação de Desperdícios (Princípio Lean)
 
-Para evitar *overengineering* e desperdício de tempo na fase inicial, as seguintes funcionalidades foram **intencionalmente excluídas do MVP** (ficando para iterações futuras após validação do produto):
-
-- Autenticação complexa com OAuth2 / múltiplos perfis de permissão.
-- Notificações por e-mail/push e integração com calendários externos.
-- Subtarefas aninhadas, anexos de arquivos e comentários em tarefas.
-- Relatórios analíticos e dashboards avançados.
-
-### 4.3. Backlog Priorizado por Valor ao Cliente (GitHub Issues)
-
-As funcionalidades foram transformadas em **GitHub Issues** e ordenadas da maior para a menor prioridade de negócio, considerando a dependência funcional e o valor entregue ao usuário final:
-
-| Prioridade | Issue | Título | Valor para o Cliente / Justificativa Lean |
-| :---: | :--- | :--- | :--- |
-| **1 (Alta)** | **Issue #1** | Criar endpoint para adicionar uma nova tarefa | **Essencial:** Sem a criação de tarefas não há dados no sistema; é o ponto de partida de valor para o usuário capturar suas demandas. |
-| **2 (Alta)** | **Issue #2** | Criar endpoint para listar tarefas | **Essencial:** Permite ao usuário visualizar imediatamente o que precisa ser feito após cadastrar suas tarefas. |
-| **3 (Média)** | **Issue #3** | Criar endpoint para atualizar uma tarefa | **Importante:** Permite evoluir o estado da tarefa (ex.: marcar como concluída ou corrigir informações), completando o ciclo de uso diário. |
-| **4 (Média/Baixa)** | **Issue #4** | Criar endpoint para deletar uma tarefa | **Complementar:** Permite higienizar a lista removendo itens criados por engano ou obsoletos, mas o sistema já é utilizável com os 3 itens anteriores. |
+Para evitar *overengineering* e desperdício de tempo na fase inicial, funcionalidades complexas (como autenticação OAuth2 multi-tenant, envio de e-mails transacionais, upload de anexos em nuvem e subtarefas infinitamente aninhadas) foram eliminadas do MVP inicial, priorizando a entrega contínua de valor.
 
 ---
 
-## 5. Gestão Ágil com Kanban (GitHub Projects)
+## 5. Distribuição das 14 Issues no Quadro Kanban (GitHub Projects)
 
-O fluxo de desenvolvimento é acompanhado em um quadro **Kanban** no **GitHub Projects** estruturado em 4 colunas:
+O quadro Kanban no **GitHub Projects** possui 4 colunas (**Backlog**, **Em progresso**, **Em revisão** e **Concluído**). Abaixo está a distribuição completa das **14 Issues** do projeto:
 
-1. **Backlog:** Issues priorizadas aguardando início do desenvolvimento.
-2. **Em progresso:** Issues que estão sendo implementadas no momento (em sua respectiva branch/feature).
-3. **Em revisão:** Código implementado, com Pull Request aberto e testes automatizados rodando no pipeline de CI.
-4. **Concluído:** Funcionalidade revisada, aprovada nos testes e integrada à branch principal (`main`).
+### ✅ Coluna 1: Concluído (5 Issues)
+Funcionalidades essenciais do MVP e infraestrutura de CI já implementadas, testadas e integradas à branch `main`:
+
+| Issue | Título | Prioridade | Endpoint / Artefato |
+| :---: | :--- | :---: | :--- |
+| **#1** | Criar endpoint para adicionar uma nova tarefa | Alta (MVP) | `POST /tasks` |
+| **#2** | Criar endpoint para listar tarefas | Alta (MVP) | `GET /tasks` |
+| **#3** | Criar endpoint para atualizar uma tarefa | Média (MVP) | `PUT /tasks/:id` |
+| **#4** | Criar endpoint para deletar uma tarefa | Baixa (MVP) | `DELETE /tasks/:id` |
+| **#5** | Configurar pipeline de Integração Contínua (CI) com GitHub Actions | Alta (MVP) | `.github/workflows/ci.yml` |
+
+### 🔍 Coluna 2: Em revisão (3 Issues)
+Funcionalidades implementadas e cobertas por testes automatizados, em etapa de validação e revisão de código (*Code Review*):
+
+| Issue | Título | Prioridade | Endpoint / Artefato |
+| :---: | :--- | :---: | :--- |
+| **#6** | Criar endpoint para buscar uma tarefa específica por ID | Alta (MVP) | `GET /tasks/:id` |
+| **#7** | Implementar validação de dados de entrada nos endpoints de criação e atualização | Alta (MVP) | `POST /tasks` e `PUT /tasks/:id` |
+| **#8** | Criar endpoint de Health Check para monitoramento da API | Média | `GET /health` |
+
+### 🚧 Coluna 3: Em progresso (3 Issues)
+Funcionalidades de evolução rápida sendo trabalhadas na iteração atual:
+
+| Issue | Título | Prioridade | Endpoint / Artefato |
+| :---: | :--- | :---: | :--- |
+| **#9** | Implementar filtro de tarefas por status de conclusão na listagem | Média | `GET /tasks?completed=true\|false` |
+| **#10** | Adicionar suporte a níveis de prioridade na tarefa (`baixa`, `media`, `alta`) | Média | Campo `priority` em `POST`/`PUT` |
+| **#11** | Criar endpoint PATCH para concluir/reabrir tarefa rapidamente | Média | `PATCH /tasks/:id/toggle` |
+
+### 📋 Coluna 4: Backlog (3 Issues)
+Funcionalidades planejadas e priorizadas para as próximas iterações (Pós-MVP), evitando desperdício precoce:
+
+| Issue | Título | Prioridade | Escopo Planejado |
+| :---: | :--- | :---: | :--- |
+| **#12** | Implementar paginação na listagem de tarefas (`page` e `limit`) | Baixa (Pós-MVP) | `GET /tasks?page=1&limit=10` |
+| **#13** | Adicionar busca de tarefas por palavra-chave no título ou descrição | Baixa (Pós-MVP) | `GET /tasks?search=termo` |
+| **#14** | Adicionar documentação interativa da API com Swagger / OpenAPI | Baixa (Pós-MVP) | Rota `/api-docs` |
 
 ---
 
 ## 6. Como Executar o Projeto Localmente
-
-### Pré-requisitos
-- Node.js (v18 ou superior)
-- npm
-
-### Instalação e Execução
 
 ```bash
 # Instalar dependências
@@ -100,10 +111,3 @@ npm test
 # Iniciar o servidor (porta 3000 por padrão)
 npm start
 ```
-
-### Exemplos de Endpoints
-
-- `POST /tasks` — Cria uma nova tarefa (`{ "title": "Estudar Lean", "description": "Revisar conceitos de MVP" }`)
-- `GET /tasks` — Lista todas as tarefas
-- `PUT /tasks/:id` — Atualiza uma tarefa existente (`{ "title": "Estudar Lean", "completed": true }`)
-- `DELETE /tasks/:id` — Remove uma tarefa pelo ID
