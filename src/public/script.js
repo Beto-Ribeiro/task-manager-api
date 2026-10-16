@@ -165,7 +165,7 @@ document.getElementById('form-edit').addEventListener('submit', async (e) => {
   }
 });
 
-// 5. Deletar tarefa (DELETE /tasks/:id)
+// 5. Deletar tarefa (DELETE /tasks/:id )
 async function deleteTask(id) {
   const res = await fetch(`/tasks/${id}`, { method: 'DELETE' });
   if (res.ok) {
