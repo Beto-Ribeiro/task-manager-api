@@ -13,6 +13,7 @@ O projeto fornece uma API simples e uma interface web minimalista para criar, vi
 
 ## 2. Estrutura do Projeto
 
+
 ```text
 task-manager-api/
 ├── .github/workflows/ci.yml
