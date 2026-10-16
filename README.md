@@ -2,7 +2,7 @@
 
 API RESTful minimalista para gerenciamento de tarefas (MVP CRUD), estruturada com foco em Lean, Metodologia Agil (Kanban) e Integracao Continua.
 
-## 1. Proposito e Tecnologias
+## 1. Propositos e Tecnologias
 
 O projeto fornece uma API simples e uma interface web minimalista para criar, visualizar, atualizar e deletar tarefas.
 
