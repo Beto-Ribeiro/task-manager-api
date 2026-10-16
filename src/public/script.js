@@ -1,258 +1,138 @@
-const KANBAN_ORDER = ['Backlog', 'Em progresso', 'Em revisão', 'Concluído'];
-let allTasks = [];
+const navLinks = document.querySelectorAll('.nav-link');
+const sections = document.querySelectorAll('.section');
+const feedbackEl = document.getElementById('feedback');
 
-// Elementos de Navegação
-const navButtons = document.querySelectorAll('.nav-btn');
-const viewSections = document.querySelectorAll('.view-section');
-const pageTitle = document.getElementById('page-title');
-const pageSubtitle = document.getElementById('page-subtitle');
-
-const VIEW_HEADERS = {
-  'view-list': {
-    title: 'Lista de Tarefas',
-    subtitle: 'Visualize, filtre, atualize e exclua suas tarefas em tempo real'
-  },
-  'view-kanban': {
-    title: 'Quadro Kanban Ágil',
-    subtitle: 'Movimente as tarefas pelas colunas Backlog, Em progresso, Em revisão e Concluído'
-  },
-  'view-create': {
-    title: 'Criar Nova Tarefa',
-    subtitle: 'Adicione uma nova tarefa com título, descrição, prioridade e coluna Kanban'
-  },
-  'view-api': {
-    title: 'Status & Endpoints da API',
-    subtitle: 'Monitore o servidor e inspecione as respostas JSON diretamente pelo navegador'
-  }
-};
-
-function switchView(viewId) {
-  navButtons.forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.view === viewId);
-  });
-  viewSections.forEach((sec) => {
-    sec.classList.toggle('active', sec.id === viewId);
-  });
-  if (VIEW_HEADERS[viewId]) {
-    pageTitle.textContent = VIEW_HEADERS[viewId].title;
-    pageSubtitle.textContent = VIEW_HEADERS[viewId].subtitle;
-  }
+function navigateTo(sectionId) {
+  sections.forEach((sec) => sec.classList.toggle('active', sec.id === sectionId));
+  navLinks.forEach((btn) => btn.classList.toggle('active', btn.dataset.section === sectionId));
 }
 
-navButtons.forEach((btn) => {
-  btn.addEventListener('click', () => switchView(btn.dataset.view));
+navLinks.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    navigateTo(btn.dataset.section);
+    if (btn.dataset.section === 'section-list') {
+      loadTasks();
+    }
+  });
 });
 
-document.getElementById('btn-quick-new').addEventListener('click', () => {
-  switchView('view-create');
-  document.getElementById('create-title').focus();
+document.getElementById('btn-go-create').addEventListener('click', () => {
+  navigateTo('section-create');
 });
 
-// Toast Notification
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.remove('hidden');
-  setTimeout(() => toast.classList.add('hidden'), 2800);
+document.getElementById('btn-cancel-create').addEventListener('click', () => {
+  navigateTo('section-list');
+});
+
+document.getElementById('btn-cancel-edit').addEventListener('click', () => {
+  navigateTo('section-list');
+});
+
+function showMessage(text) {
+  feedbackEl.textContent = text;
+  feedbackEl.classList.remove('hidden');
+  setTimeout(() => feedbackEl.classList.add('hidden'), 2500);
 }
 
-// Carregar Tarefas da API
-async function fetchTasks() {
-  const search = document.getElementById('filter-search').value;
-  const completed = document.getElementById('filter-completed').value;
-  const priority = document.getElementById('filter-priority').value;
-  const status = document.getElementById('filter-kanban').value;
-
-  const params = new URLSearchParams();
-  if (search) params.set('search', search);
-  if (completed !== '') params.set('completed', completed);
-  if (priority) params.set('priority', priority);
-  if (status) params.set('status', status);
-
-  const [filteredRes, allRes] = await Promise.all([
-    fetch(`/tasks?${params.toString()}`),
-    fetch('/tasks')
-  ]);
-
-  const filteredTasks = await filteredRes.json();
-  allTasks = await allRes.json();
-
-  updateStats(allTasks);
-  renderTaskList(filteredTasks);
-  renderKanban(allTasks);
-}
-
-function updateStats(tasks) {
-  const total = tasks.length;
-  const done = tasks.filter((t) => t.completed).length;
-  const pending = total - done;
-  const high = tasks.filter((t) => t.priority === 'alta' && !t.completed).length;
-
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-pending').textContent = pending;
-  document.getElementById('stat-high').textContent = high;
-  document.getElementById('stat-done').textContent = done;
-}
-
-function escapeHtml(str) {
-  return String(str || '')
+function escapeHtml(text) {
+  return String(text || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
 
-// Renderizar Lista de Tarefas
-function renderTaskList(tasks) {
-  const container = document.getElementById('tasks-list-container');
+// 1. Listar tarefas (GET /tasks)
+async function loadTasks() {
+  const res = await fetch('/tasks');
+  const tasks = await res.json();
+  const container = document.getElementById('tasks-container');
+
   if (tasks.length === 0) {
-    container.innerHTML = `<div class="empty-state">Nenhuma tarefa encontrada para os filtros selecionados.</div>`;
+    container.innerHTML = '<div class="empty-msg">Nenhuma tarefa cadastrada.</div>';
     return;
   }
 
   container.innerHTML = tasks
     .map(
-      (task) => `
-    <div class="task-item ${task.completed ? 'completed' : ''}">
-      <div class="task-left">
-        <input
-          type="checkbox"
-          class="task-check"
-          ${task.completed ? 'checked' : ''}
-          onchange="toggleTask(${task.id})"
-          title="Concluir / Reabrir tarefa"
-        />
-        <div class="task-info">
-          <div class="task-title-row">
-            <span class="task-id">#${task.id}</span>
-            <span class="task-title">${escapeHtml(task.title)}</span>
-            <span class="badge badge-${task.priority}">Prioridade: ${task.priority}</span>
-            <span class="badge badge-status">${escapeHtml(task.status || (task.completed ? 'Concluído' : 'Backlog'))}</span>
-          </div>
-          ${task.description ? `<p class="task-desc">${escapeHtml(task.description)}</p>` : ''}
+      (t) => `
+      <div class="task-row">
+        <div class="task-main">
+          <span class="task-title ${t.completed ? 'done' : ''}">${escapeHtml(t.title)}</span>
+          ${t.description ? `<span class="task-desc">${escapeHtml(t.description)}</span>` : ''}
+          <span class="task-meta">ID: ${t.id} | Status: ${t.completed ? 'Concluida' : 'Pendente'}</span>
+        </div>
+        <div class="task-actions">
+          <button class="btn btn-outline" onclick="viewTask(${t.id})">Visualizar</button>
+          <button class="btn btn-outline" onclick="openEdit(${t.id})">Editar</button>
+          <button class="btn btn-danger" onclick="deleteTask(${t.id})">Excluir</button>
         </div>
       </div>
-      <div class="task-actions">
-        <button class="btn btn-secondary btn-sm" onclick="openEditModal(${task.id})">✏️ Editar / Ver</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteTask(${task.id})">🗑️ Excluir</button>
-      </div>
-    </div>
-  `
+    `
     )
     .join('');
 }
 
-// Renderizar Quadro Kanban
-function renderKanban(tasks) {
-  const cols = {
-    'Backlog': document.getElementById('kanban-backlog'),
-    'Em progresso': document.getElementById('kanban-progress'),
-    'Em revisão': document.getElementById('kanban-review'),
-    'Concluído': document.getElementById('kanban-done')
-  };
-
-  const counts = {
-    'Backlog': 0,
-    'Em progresso': 0,
-    'Em revisão': 0,
-    'Concluído': 0
-  };
-
-  Object.values(cols).forEach((el) => (el.innerHTML = ''));
-
-  tasks.forEach((task) => {
-    const colName = KANBAN_ORDER.includes(task.status)
-      ? task.status
-      : task.completed
-      ? 'Concluído'
-      : 'Backlog';
-    counts[colName]++;
-
-    const idx = KANBAN_ORDER.indexOf(colName);
-    const prevCol = idx > 0 ? KANBAN_ORDER[idx - 1] : null;
-    const nextCol = idx < KANBAN_ORDER.length - 1 ? KANBAN_ORDER[idx + 1] : null;
-
-    const card = document.createElement('div');
-    card.className = 'kanban-card';
-    card.innerHTML = `
-      <div class="kanban-card-top">
-        <span class="task-id">#${task.id}</span>
-        <span class="badge badge-${task.priority}">${task.priority}</span>
-      </div>
-      <h4>${escapeHtml(task.title)}</h4>
-      ${task.description ? `<p>${escapeHtml(task.description)}</p>` : ''}
-      <div class="kanban-card-footer">
-        <div>
-          ${prevCol ? `<button class="btn btn-secondary btn-sm" onclick="moveKanban(${task.id}, '${prevCol}')" title="Mover para ${prevCol}">◀</button>` : ''}
-          ${nextCol ? `<button class="btn btn-primary btn-sm" onclick="moveKanban(${task.id}, '${nextCol}')" title="Mover para ${nextCol}">▶</button>` : ''}
-        </div>
-        <div>
-          <button class="btn btn-secondary btn-sm" onclick="openEditModal(${task.id})" title="Editar">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteTask(${task.id})" title="Excluir">🗑️</button>
-        </div>
-      </div>
-    `;
-    cols[colName].appendChild(card);
-  });
-
-  document.getElementById('count-backlog').textContent = counts['Backlog'];
-  document.getElementById('count-progress').textContent = counts['Em progresso'];
-  document.getElementById('count-review').textContent = counts['Em revisão'];
-  document.getElementById('count-done').textContent = counts['Concluído'];
-}
-
-// Ações CRUD
-async function toggleTask(id) {
-  await fetch(`/tasks/${id}/toggle`, { method: 'PATCH' });
-  showToast(`Status da tarefa #${id} atualizado!`);
-  fetchTasks();
-}
-
-async function moveKanban(id, newStatus) {
-  await fetch(`/tasks/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status: newStatus })
-  });
-  showToast(`Tarefa #${id} movida para "${newStatus}"!`);
-  fetchTasks();
-}
-
-async function deleteTask(id) {
-  const res = await fetch(`/tasks/${id}`, { method: 'DELETE' });
-  if (res.ok) {
-    showToast(`Tarefa #${id} excluída com sucesso!`);
-    fetchTasks();
-  }
-}
-
-// Criar Nova Tarefa
-document.getElementById('form-create-task').addEventListener('submit', async (e) => {
+// 2. Criar nova tarefa (POST /tasks)
+document.getElementById('form-create').addEventListener('submit', async (e) => {
   e.preventDefault();
   const title = document.getElementById('create-title').value;
   const description = document.getElementById('create-description').value;
-  const priority = document.getElementById('create-priority').value;
-  const status = document.getElementById('create-status').value;
 
   const res = await fetch('/tasks', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, description, priority, status })
+    body: JSON.stringify({ title, description })
   });
 
   if (res.ok) {
     e.target.reset();
-    showToast('Nova tarefa criada com sucesso!');
-    await fetchTasks();
-    switchView('view-list');
-  } else {
-    const err = await res.json();
-    showToast(err.error || 'Erro ao criar tarefa');
+    showMessage('Tarefa criada com sucesso.');
+    navigateTo('section-list');
+    loadTasks();
   }
 });
 
-// Modal de Visualização / Edição (GET /tasks/:id e PUT /tasks/:id)
-async function openEditModal(id) {
+// 3. Visualizar tarefa por ID (GET /tasks/:id)
+async function viewTask(id) {
+  document.getElementById('search-id-input').value = id;
+  navigateTo('section-detail');
+  await fetchTaskById(id);
+}
+
+async function fetchTaskById(id) {
+  const resultDiv = document.getElementById('detail-result');
+  const res = await fetch(`/tasks/${id}`);
+
+  if (!res.ok) {
+    resultDiv.innerHTML = '<div class="empty-msg">Tarefa nao encontrada.</div>';
+    return;
+  }
+
+  const t = await res.json();
+  resultDiv.innerHTML = `
+    <div class="task-row">
+      <div class="task-main">
+        <span class="task-title ${t.completed ? 'done' : ''}">${escapeHtml(t.title)}</span>
+        <span class="task-desc">${escapeHtml(t.description || 'Sem descricao')}</span>
+        <span class="task-meta">ID: ${t.id} | Status: ${t.completed ? 'Concluida' : 'Pendente'}</span>
+      </div>
+      <div class="task-actions">
+        <button class="btn btn-outline" onclick="openEdit(${t.id})">Editar</button>
+        <button class="btn btn-danger" onclick="deleteTask(${t.id})">Excluir</button>
+      </div>
+    </div>
+  `;
+}
+
+document.getElementById('form-search-id').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('search-id-input').value;
+  await fetchTaskById(id);
+});
+
+// 4. Atualizar tarefa (PUT /tasks/:id)
+async function openEdit(id) {
   const res = await fetch(`/tasks/${id}`);
   if (!res.ok) return;
   const task = await res.json();
@@ -260,67 +140,43 @@ async function openEditModal(id) {
   document.getElementById('edit-id').value = task.id;
   document.getElementById('edit-title').value = task.title;
   document.getElementById('edit-description').value = task.description || '';
-  document.getElementById('edit-priority').value = task.priority || 'media';
-  document.getElementById('edit-status').value = task.status || (task.completed ? 'Concluído' : 'Backlog');
-  document.getElementById('edit-meta').textContent = `ID #${task.id} • Criada em: ${new Date(task.createdAt).toLocaleString('pt-BR')}`;
+  document.getElementById('edit-completed').checked = Boolean(task.completed);
 
-  document.getElementById('task-modal').classList.remove('hidden');
+  navigateTo('section-edit');
 }
 
-function closeEditModal() {
-  document.getElementById('task-modal').classList.add('hidden');
-}
-
-document.getElementById('btn-close-modal').addEventListener('click', closeEditModal);
-document.getElementById('btn-cancel-modal').addEventListener('click', closeEditModal);
-
-document.getElementById('form-edit-task').addEventListener('submit', async (e) => {
+document.getElementById('form-edit').addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = document.getElementById('edit-id').value;
   const title = document.getElementById('edit-title').value;
   const description = document.getElementById('edit-description').value;
-  const priority = document.getElementById('edit-priority').value;
-  const status = document.getElementById('edit-status').value;
+  const completed = document.getElementById('edit-completed').checked;
 
   const res = await fetch(`/tasks/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, description, priority, status })
+    body: JSON.stringify({ title, description, completed })
   });
 
   if (res.ok) {
-    closeEditModal();
-    showToast(`Tarefa #${id} atualizada!`);
-    fetchTasks();
+    showMessage('Tarefa atualizada com sucesso.');
+    navigateTo('section-list');
+    loadTasks();
   }
 });
 
-// Filtros em Tempo Real
-['filter-search', 'filter-completed', 'filter-priority', 'filter-kanban'].forEach((id) => {
-  document.getElementById(id).addEventListener('input', fetchTasks);
-});
+// 5. Deletar tarefa (DELETE /tasks/:id)
+async function deleteTask(id) {
+  const res = await fetch(`/tasks/${id}`, { method: 'DELETE' });
+  if (res.ok) {
+    showMessage('Tarefa excluida.');
+    navigateTo('section-list');
+    loadTasks();
+  }
+}
 
-document.getElementById('btn-refresh').addEventListener('click', () => {
-  fetchTasks();
-  showToast('Dados atualizados!');
-});
-
-// Explorador de API
-document.getElementById('btn-test-health').addEventListener('click', async () => {
-  const data = await fetch('/health').then((r) => r.json());
-  document.getElementById('api-json-output').textContent = JSON.stringify(data, null, 2);
-});
-
-document.getElementById('btn-test-tasks').addEventListener('click', async () => {
-  const data = await fetch('/tasks').then((r) => r.json());
-  document.getElementById('api-json-output').textContent = JSON.stringify(data, null, 2);
-});
-
-// Expor funções globais para os botões inline
-window.toggleTask = toggleTask;
-window.moveKanban = moveKanban;
+window.viewTask = viewTask;
+window.openEdit = openEdit;
 window.deleteTask = deleteTask;
-window.openEditModal = openEditModal;
 
-// Inicialização
-fetchTasks();
+loadTasks();
