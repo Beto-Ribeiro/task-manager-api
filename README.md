@@ -1,24 +1,39 @@
 # Taskflow — Task Manager API
 
-Aplicação web responsiva para gerenciamento de tarefas, construída com Node.js, Express, HTML, CSS e JavaScript puro. O projeto mantém uma API REST e uma interface visual Taskflow.
+Aplicação web responsiva para gerenciamento de tarefas, construída com Node.js, Express, HTML5, CSS3 e JavaScript puro. O projeto integra uma API RESTful completa, uma interface visual interativa (**Taskflow**), uma suíte de testes automatizados e um pipeline completo de **Integração e Entrega Contínua (CI/CD)** com GitHub Actions e Render.
 
 ## Funcionalidades
 
-- Criar, listar, consultar, editar e excluir tarefas (CRUD).
-- Marcar tarefas como concluídas ou reabri-las.
-- Buscar por título, descrição ou ID e filtrar por status.
-- Painel com total, pendentes, concluídas e percentual de progresso.
-- Feedback visual para operações e indisponibilidade da API.
+- Criar, listar, consultar por ID, editar e excluir tarefas (CRUD completo).
+- Marcar tarefas como concluídas ou reabri-las rapidamente.
+- Buscar tarefas por título, descrição ou ID e filtrar por status (*Todas*, *Pendentes*, *Concluídas*).
+- Painel em tempo real com indicadores de total, pendentes, concluídas e barra de progresso percentual.
+- Validação de dados de entrada na API e feedback visual (toasts e estados de sincronização) na interface.
 
 ## Tecnologias
 
-- Node.js 20 e Express 4
-- HTML5, CSS3 e JavaScript (sem framework frontend)
-- `node:test` para testes automatizados
-- GitHub Actions para CI/CD
-- Render para hospedagem da aplicação web/API
+- **Backend:** Node.js 20 e Express 4
+- **Frontend:** HTML5, CSS3 e JavaScript (Vanilla JS)
+- **Testes Automatizados:** `node:test` e `node:assert/strict`
+- **CI/CD:** GitHub Actions (`.github/workflows/ci.yml`)
+- **Hospedagem / Deploy Contínuo:** Render (`render.yaml` + Deploy Hook)
 
-## Executar localmente
+## Metodologia Ágil (Lean & Kanban)
+
+O desenvolvimento do projeto foi organizado utilizando práticas de **Lean** (foco na entrega enxuta de valor, construção incremental do MVP e eliminação de retrabalho manual por meio de automação CI/CD) e gestão visual via **Kanban** no GitHub Issues/Projects:
+
+- **Concluído:**
+  - Issue #1 — Criar endpoint para adicionar uma nova tarefa (`POST /tasks`)
+  - Issue #2 — Criar endpoint para listar tarefas (`GET /tasks`)
+  - Issue #3 — Criar endpoint para atualizar uma tarefa (`PUT /tasks/:id`)
+  - Issue #4 — Criar endpoint para deletar uma tarefa (`DELETE /tasks/:id`)
+  - Issue #5 — Configurar pipeline de Integração Contínua (CI) com GitHub Actions
+  - Issue #6 — Criar endpoint para buscar uma tarefa específica por ID (`GET /tasks/:id`)
+  - Issue #7 — Implementar validação de dados de entrada nos endpoints de criação e atualização
+- **Em evolução / Backlog de melhorias:**
+  - Issues #8 a #14 — Health check, filtro e busca via query params na API, níveis de prioridade, paginação e documentação OpenAPI/Swagger.
+
+## Executar Localmente
 
 Requisitos: Node.js 20+ e npm.
 
@@ -28,67 +43,63 @@ npm test
 npm start
 ```
 
-Abra `http://localhost:3000`.
-
-## Quadro Kanban (snapshot do README anterior)
-
-- **Concluído:** Issues #1, #2, #3, #4 e #5
-- **Em revisão:** Issues #6, #7 e #8
-- **Em progresso:** Issues #9, #10 e #11
-- **Backlog:** Issues #12, #13 e #14
-
-Confirme o estado atual dessas Issues no GitHub Projects antes do seminário, pois o quadro pode ter sido atualizado.
+Após iniciar, acesse `http://localhost:3000`.
 
 ## API REST
 
-| Método | Rota | Comportamento |
-|---|---|---|
-| POST | `/tasks` | Cria tarefa |
-| GET | `/tasks` | Lista tarefas |
-| GET | `/tasks/:id` | Consulta tarefa |
-| PUT | `/tasks/:id` | Atualiza tarefa |
-| DELETE | `/tasks/:id` | Exclui tarefa |
+| Método | Rota | Descrição | Status de Sucesso |
+|---|---|---|---|
+| `POST` | `/tasks` | Cria uma nova tarefa | `201 Created` |
+| `GET` | `/tasks` | Lista todas as tarefas | `200 OK` |
+| `GET` | `/tasks/:id` | Consulta uma tarefa específica pelo ID | `200 OK` |
+| `PUT` | `/tasks/:id` | Atualiza título, descrição e/ou status da tarefa | `200 OK` |
+| `DELETE` | `/tasks/:id` | Exclui uma tarefa pelo ID | `204 No Content` |
 
-Exemplo de criação:
+Exemplo de corpo para criação (`POST /tasks`):
 
 ```json
 {
-  "title": "Preparar apresentação",
-  "description": "Revisar slides e ensaiar"
+  "title": "Preparar apresentação da Avaliação 4",
+  "description": "Demonstrar pipeline de CI/CD e testes automatizados"
 }
 ```
 
-O campo `title` é obrigatório. `description` deve ser texto e `completed`, quando enviado, deve ser booleano.
+Regras de validação:
+- `title`: obrigatório, texto não vazio (`400 Bad Request` caso ausente ou em branco).
+- `description`: opcional, deve ser texto (`400 Bad Request` caso seja de outro tipo).
+- `completed`: booleano (`true` ou `false`) ao atualizar (`400 Bad Request` caso não seja booleano).
+- `id`: inteiro positivo existente (`404 Not Found` caso não exista).
 
-## Testes automatizados
+## Testes Automatizados
 
-Execute `npm test`. A suíte cobre criação, listagem, consulta por ID, atualização, exclusão, validação de entrada e tratamento de ID inexistente.
+A suíte em `test/tasks.test.js` é executada com `npm test` e conta com **8 testes automatizados** isolados por `beforeEach(resetTasks)`:
 
-## Pipeline CI/CD
+1. Criação de tarefa (`POST /tasks` → `201`).
+2. Listagem de tarefas (`GET /tasks` → `200`).
+3. Consulta de tarefa específica por ID (`GET /tasks/:id` → `200`).
+4. Atualização de título e status de conclusão (`PUT /tasks/:id` → `200`).
+5. Exclusão de tarefa (`DELETE /tasks/:id` → `204`).
+6. Rejeição de título ausente ou vazio (`POST /tasks` → `400`).
+7. Rejeição do campo `completed` quando não é booleano (`PUT /tasks/:id` → `400`).
+8. Retorno `404 Not Found` para identificador inexistente (`GET /tasks/9999` → `404`).
 
-O workflow `.github/workflows/ci.yml` é executado em push e pull request direcionados a `main` ou `master`.
+## Pipeline de CI/CD (GitHub Actions + Render)
 
-1. Faz checkout do código.
-2. Configura Node.js 20.
-3. Instala dependências com `npm ci`.
-4. Executa `npm test`.
-5. Somente em push para `main`, após sucesso dos testes, aciona o deploy no Render.
+O workflow `.github/workflows/ci.yml` implementa o fluxo de Integração e Entrega Contínua na branch principal (`main`):
 
-### Configuração obrigatória do Render
+1. **Integração Contínua (`build-and-test`):**
+   - Disparado automaticamente em todo `push` e `pull_request` direcionado à branch `main`.
+   - Faz checkout do código, configura o Node.js 20, instala dependências com `npm ci` e executa os 8 testes automatizados com `npm test`.
+2. **Entrega Contínua (`deploy`):**
+   - Como o projeto é uma aplicação web **não estática** (servidor Node.js + Express servindo API e frontend), a publicação é realizada automaticamente no **Render**.
+   - Depende da aprovação dos testes (`needs: build-and-test`) e executa apenas em eventos `push` na branch `main`, acionando o Deploy Hook configurado no secret `RENDER_DEPLOY_HOOK`.
 
-1. Crie um serviço **Web Service** no Render conectado a este repositório.
-2. Configure Build Command: `npm ci`.
-3. Configure Start Command: `npm start`.
-4. No painel do serviço, gere um **Deploy Hook**.
-5. No GitHub, abra **Settings → Secrets and variables → Actions → New repository secret**.
-6. Nome: `RENDER_DEPLOY_HOOK`. Valor: URL do Deploy Hook do Render.
-
-O arquivo `render.yaml` documenta a configuração base. O deploy automático depende da criação do serviço e do secret; não inclua a URL do hook no código.
-
-## Estrutura
+## Estrutura do Projeto
 
 ```text
-.github/workflows/ci.yml
+.github/
+  workflows/
+    ci.yml
 src/
   app.js
   server.js
@@ -96,23 +107,19 @@ src/
     index.html
     styles.css
     script.js
-test/tasks.test.js
+test/
+  tasks.test.js
 render.yaml
 package.json
 README.md
 ```
 
-## Observações e limitações conhecidas
+## Integrantes do Grupo
 
-- Os dados são armazenados em memória. Reiniciar ou redeployar o serviço reinicia a lista; não é persistência de produção.
-- A interface usa DM Sans e Manrope via Google Fonts, com fontes alternativas se não houver conexão.
-- O serviço Render e o secret precisam ser configurados pelo responsável pelo repositório.
-- A suíte automatizada deve ser executada no ambiente local e no GitHub Actions antes da apresentação.
-
-## Preparação do seminário
-
-- Preencher os nomes completos de todos os integrantes nos slides.
-- Mostrar o CRUD na interface.
-- Mostrar os testes no GitHub Actions.
-- Demonstrar que pull request executa CI e que push na `main` pode disparar CD após a configuração do Render.
-- Apresentar o quadro Kanban/Issues real do repositório; atualizar este documento se o estado das Issues tiver mudado.
+- Thierry
+- Humberto
+- Mauro
+- Alessandra
+- Luiz
+- Giovanna
+- Adryel

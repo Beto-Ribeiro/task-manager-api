@@ -210,6 +210,7 @@ async function deleteTask(id) {
 
   try {
     await apiRequest(`/tasks/${id}`, { method: 'DELETE' });
+    $('#detail-result').innerHTML = '';
     toast('Tarefa excluída.');
     await loadTasks();
   } catch (error) {
@@ -266,6 +267,9 @@ async function submitTask(event) {
     }
     taskModal.close();
     await loadTasks();
+    if (id && $('#detail-result').innerHTML.trim() !== '' && $('#search-id-input').value.trim() === String(id)) {
+      await searchById(new Event('submit'));
+    }
   } catch (error) {
     toast(error.message, 'error');
   } finally {
