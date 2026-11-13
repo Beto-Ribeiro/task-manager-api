@@ -5,5 +5,5 @@ const PORT = process.env.PORT || 3000;
 seedInitialTasks();
 
 app.listen(PORT, () => {
-  console.log(`Task Manager API & Interface Web rodando em http://localhost:${PORT}`);
+  console.log(`Taskflow API e interface web disponíveis na porta ${PORT}`);
 });

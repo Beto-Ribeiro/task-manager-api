@@ -1,7 +1,7 @@
 {
   "name": "task-manager-api",
   "version": "1.0.0",
-  "description": "API RESTful para gerenciamento de tarefas (MVP CRUD)",
+  "description": "API RESTful e interface Taskflow para gerenciamento de tarefas",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -12,9 +12,10 @@
     "crud",
     "api",
     "lean",
-    "agile"
+    "agile",
+    "taskflow"
   ],
-  "author": "Beto-Ribeiro",
+  "author": "Task Manager Team",
   "license": "MIT",
   "dependencies": {
     "express": "^4.21.2"

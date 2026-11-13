@@ -6,76 +6,73 @@ async function request(method, path, body = null) {
   const server = app.listen(0);
   const { port } = server.address();
   try {
-    const options = {
-      method,
-      headers: { 'Content-Type': 'application/json' }
-    };
-    if (body !== null) {
-      options.body = JSON.stringify(body);
-    }
+    const options = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body !== null) options.body = JSON.stringify(body);
     const response = await fetch(`http://127.0.0.1:${port}${path}`, options);
     const text = await response.text();
-    const data = text ? JSON.parse(text) : null;
-    return { status: response.status, body: data };
+    return { status: response.status, body: text ? JSON.parse(text) : null };
   } finally {
-    server.close();
+    await new Promise((resolve) => server.close(resolve));
   }
 }
 
-describe('Task Manager API - Testes do MVP (CRUD)', () => {
-  beforeEach(() => {
-    resetTasks();
-  });
+describe('Task Manager API - testes automatizados', () => {
+  beforeEach(resetTasks);
 
-  it('Deve criar uma nova tarefa (POST /tasks)', async () => {
-    const res = await request('POST', '/tasks', {
-      title: 'Nova tarefa',
-      description: 'Descricao da tarefa'
-    });
-
+  it('cria uma tarefa (POST /tasks)', async () => {
+    const res = await request('POST', '/tasks', { title: 'Nova tarefa', description: 'Descrição' });
     assert.equal(res.status, 201);
     assert.equal(res.body.id, 1);
     assert.equal(res.body.title, 'Nova tarefa');
     assert.equal(res.body.completed, false);
   });
 
-  it('Deve listar todas as tarefas (GET /tasks)', async () => {
+  it('lista tarefas (GET /tasks)', async () => {
     await request('POST', '/tasks', { title: 'Tarefa 1' });
     await request('POST', '/tasks', { title: 'Tarefa 2' });
-
     const res = await request('GET', '/tasks');
     assert.equal(res.status, 200);
     assert.equal(res.body.length, 2);
   });
 
-  it('Deve visualizar uma tarefa por ID (GET /tasks/:id)', async () => {
-    const created = await request('POST', '/tasks', { title: 'Tarefa especifica' });
-
+  it('consulta uma tarefa por ID (GET /tasks/:id)', async () => {
+    const created = await request('POST', '/tasks', { title: 'Tarefa específica' });
     const res = await request('GET', `/tasks/${created.body.id}`);
     assert.equal(res.status, 200);
-    assert.equal(res.body.title, 'Tarefa especifica');
+    assert.equal(res.body.title, 'Tarefa específica');
   });
 
-  it('Deve atualizar uma tarefa existente (PUT /tasks/:id)', async () => {
-    const created = await request('POST', '/tasks', { title: 'Tarefa inicial' });
-
-    const res = await request('PUT', `/tasks/${created.body.id}`, {
-      title: 'Tarefa atualizada',
-      completed: true
-    });
-
+  it('atualiza título e conclusão (PUT /tasks/:id)', async () => {
+    const created = await request('POST', '/tasks', { title: 'Inicial' });
+    const res = await request('PUT', `/tasks/${created.body.id}`, { title: 'Atualizada', completed: true });
     assert.equal(res.status, 200);
-    assert.equal(res.body.title, 'Tarefa atualizada');
+    assert.equal(res.body.title, 'Atualizada');
     assert.equal(res.body.completed, true);
   });
 
-  it('Deve deletar uma tarefa existente (DELETE /tasks/:id)', async () => {
-    const created = await request('POST', '/tasks', { title: 'Tarefa para deletar' });
+  it('exclui uma tarefa (DELETE /tasks/:id)', async () => {
+    const created = await request('POST', '/tasks', { title: 'Excluir' });
+    const del = await request('DELETE', `/tasks/${created.body.id}`);
+    assert.equal(del.status, 204);
+    const list = await request('GET', '/tasks');
+    assert.equal(list.body.length, 0);
+  });
 
-    const delRes = await request('DELETE', `/tasks/${created.body.id}`);
-    assert.equal(delRes.status, 204);
+  it('rejeita título ausente ou vazio', async () => {
+    const missing = await request('POST', '/tasks', {});
+    const blank = await request('POST', '/tasks', { title: '   ' });
+    assert.equal(missing.status, 400);
+    assert.equal(blank.status, 400);
+  });
 
-    const listRes = await request('GET', '/tasks');
-    assert.equal(listRes.body.length, 0);
+  it('rejeita completed quando não é booleano', async () => {
+    const created = await request('POST', '/tasks', { title: 'Validação' });
+    const res = await request('PUT', `/tasks/${created.body.id}`, { completed: 'false' });
+    assert.equal(res.status, 400);
+  });
+
+  it('retorna 404 para identificador inexistente', async () => {
+    const res = await request('GET', '/tasks/9999');
+    assert.equal(res.status, 404);
   });
 });
